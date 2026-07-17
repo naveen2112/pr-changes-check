@@ -46,5 +46,5 @@ jobs:
       - name: Display PR diff8  
         run: |   
           echo "===== BEGIN PR DIFF ====="10    
-          cat ${{ github.workspace }}/pr_diff.txt11    
+          cat ${{ github.workspace }}/pr_diff.txt    
           echo "===== END PR DIFF ====="
