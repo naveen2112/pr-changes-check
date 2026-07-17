@@ -2,7 +2,10 @@ name: Update Documentation After Merge (cross-repo)
 
 on:
   pull_request:
-    types: [closed]
+    branches:
+      - main
+    types: 
+      - closed
 
 concurrency:
   group: update-docs-${{ github.base_ref }}
