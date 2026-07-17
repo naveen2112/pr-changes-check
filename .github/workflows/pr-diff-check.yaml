@@ -1,0 +1,50 @@
+name: Update Documentation After Merge (cross-repo)
+
+on:
+  pull_request:
+    types: [closed]
+
+concurrency:
+  group: update-docs-${{ github.base_ref }}
+  cancel-in-progress: false
+
+env:
+  # The separate repo that holds the documentation.
+  DOCS_REPO: your-org/docs-repo
+  DOCS_REPO_DEFAULT_BRANCH: main
+  # Paths *inside the docs repo* to keep in sync, comma-separated.
+  DOC_PATHS: "docs/README.md"
+
+jobs:
+  update-docs:
+    if: >
+      github.event.pull_request.merged == true &&
+      !contains(github.event.pull_request.title, '[skip ci]') &&
+      !contains(github.event.pull_request.body, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      # 1. Checkout the code repo at the merge commit so we can diff what just landed.
+      - name: Checkout code repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
+          fetch-depth: 0
+
+      - name: Compute merged PR diff
+        run: |
+          MERGE_SHA=${{ github.event.pull_request.merge_commit_sha }}
+          # Diff the merge commit against its first parent (the base branch
+          # tip before the merge) — this is the net change the PR introduced.
+          git diff ${MERGE_SHA}^1 ${MERGE_SHA} -- . ':(exclude)*.lock' > ${{ github.workspace }}/pr_diff.txt
+          echo "Diff size: $(wc -l < pr_diff.txt) lines"
+
+      - name: Display PR diff8  
+        run: |   
+          echo "===== BEGIN PR DIFF ====="10    
+          cat ${{ github.workspace }}/pr_diff.txt11    
+          echo "===== END PR DIFF ====="
