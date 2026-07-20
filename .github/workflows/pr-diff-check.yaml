@@ -21,7 +21,7 @@ env:
   BEDROCK_MODEL_ID: global.anthropic.claude-haiku-4-5-20251001-v1:0
   AWS_ACCESS_KEY_ID: AKIA4PEOXVZYIZPUNTNN
   AWS_SECRET_ACCESS_KEY: 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
-  DOCS_REPO_PAT: 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
+
 
 jobs:
   update-docs:
@@ -67,7 +67,7 @@ jobs:
         with:
           repository: ${{ env.DOCS_REPO }}
           ref: ${{ env.DOCS_REPO_DEFAULT_BRANCH }}
-          token: ${{ env.DOCS_REPO_PAT }}
+          token: ${{ secrets.DOCS_REPO_PAT }}
           path: docs-repo
 
       - name: Set up Python
@@ -110,7 +110,7 @@ jobs:
         id: create_pr
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ env.DOCS_REPO_PAT }}
+          token: ${{ secrets.DOCS_REPO_PAT }}
           path: docs-repo
           commit-message: "docs: sync with ${{ github.repository }}#${{ github.event.pull_request.number }} (merged)"
           branch: docs-bot/sync-pr-${{ github.event.pull_request.number }}
@@ -127,7 +127,7 @@ jobs:
       - name: Auto-merge docs PR
         if: steps.create_pr.outputs.pull-request-number != ''
         env:
-          GH_TOKEN: ${{ env.DOCS_REPO_PAT }}
+          GH_TOKEN: ${{ secrets.DOCS_REPO_PAT }}
         run: |
           gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} \
             --repo ${{ env.DOCS_REPO }} \
