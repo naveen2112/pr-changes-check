@@ -18,7 +18,7 @@ env:
   # swap BEDROCK_MODEL_ID for a Sonnet inference profile if you need
   # higher-quality doc rewrites and are OK paying more per run.
   AWS_REGION: us-east-1
-  BEDROCK_MODEL_ID: anthropic.claude-haiku-4-5-20251001-v1:0
+  BEDROCK_MODEL_ID: global.anthropic.claude-haiku-4-5-20251001-v1:0
 
 
 jobs:
