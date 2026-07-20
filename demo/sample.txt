@@ -1,1 +1,1 @@
-application backround colour will be red so that application will be neat
+application backround colour will be blue so that application will be neat
