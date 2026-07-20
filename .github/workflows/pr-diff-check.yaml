@@ -19,8 +19,6 @@ env:
   # higher-quality doc rewrites and are OK paying more per run.
   AWS_REGION: us-east-1
   BEDROCK_MODEL_ID: global.anthropic.claude-haiku-4-5-20251001-v1:0
-  AWS_ACCESS_KEY_ID: AKIA4PEOXVZYIZPUNTNN
-  AWS_SECRET_ACCESS_KEY: 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
 
 
 jobs:
@@ -88,8 +86,8 @@ jobs:
       - name: Configure AWS credentials (static access key)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Ask Claude (via Bedrock) to update documentation
