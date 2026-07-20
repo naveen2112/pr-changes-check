@@ -1,2 +1,1 @@
-You can paste existing content from other documents or sources, but pasting from other sources (e.g., Microsoft Word, other websites) may bring unwanted "HTML markup" that could cause formatting issues. It may be preferable to paste your content as "plain text" (e.g., using Notepad or TextEdit), and then add the necessary formatting (e.g., bold or italics, headings, bullet points) using the editing toolbar.
-
+application backround colour will be black so that application will be neat
