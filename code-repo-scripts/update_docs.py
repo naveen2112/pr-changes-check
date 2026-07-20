@@ -29,7 +29,7 @@ from anthropic import AnthropicBedrock
 
 # Cheapest current-generation model by default. Bump to a Sonnet model
 # (e.g. "us.anthropic.claude-sonnet-5-...") if doc quality needs improving.
-DEFAULT_MODEL_ID = "anthropic.claude-haiku-4-5-20251001-v1:0"
+DEFAULT_MODEL_ID = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 MAX_DIFF_CHARS = int(os.environ.get("MAX_DIFF_CHARS", "60000"))
 
 SYSTEM_PROMPT = """You are a meticulous technical writer who keeps a repository's \
