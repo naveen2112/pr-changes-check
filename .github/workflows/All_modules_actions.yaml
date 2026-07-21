@@ -1,0 +1,71 @@
+# Install this file, unchanged, as .github/workflows/dispatch-doc-diff.yml
+# in EVERY module repo. The only thing that differs between module repos is
+# the MODULE_NAME repository variable (Settings -> Secrets and variables ->
+# Actions -> Variables) and the MODULE_DISPATCH_PAT secret.
+#
+# This workflow does NOT call Bedrock, open PRs, or merge anything. It only
+# computes the diff for the merged PR and asks the central docs-repo
+# workflow to process it.
+
+name: Dispatch Doc Diff (module)
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+env:
+  # Set per-module-repo. Falls back to the repo name if unset, so this
+  # workflow works with zero configuration for a brand-new module.
+  MODULE_NAME: ${{ vars.MODULE_NAME || github.event.repository.name }}
+  # Where the centralized automation + docs live.
+  DOCS_REPO: naveen2112/docs-repo
+
+jobs:
+  dispatch:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout at merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Compute merged PR diff
+        id: diff
+        run: |
+          MERGE_SHA=${{ github.event.pull_request.merge_commit_sha }}
+          git diff "${MERGE_SHA}^1" "${MERGE_SHA}" -- . ':(exclude)*.lock' > pr_diff.txt
+          echo "lines=$(wc -l < pr_diff.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload diff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doc-diff
+          path: pr_diff.txt
+          retention-days: 90
+
+      # Fine-grained PAT scoped to ONLY this permission on ONLY the docs
+      # repo: "Contents: read" is not enough for repository_dispatch —
+      # grant "Administration: read" is NOT needed either; the dispatch
+      # endpoint only needs a token with access to the target repo and the
+      # `repo` (classic) or fine-grained "Contents: read/write" +
+      # dispatch permission on that repo. Store as MODULE_DISPATCH_PAT.
+      #Contents: Read and write only enough
+      - name: Notify central docs workflow
+        env:
+          GH_TOKEN: ${{ secrets.MODULE_DISPATCH_PAT }}
+        run: |
+          gh api repos/${{ env.DOCS_REPO }}/dispatches \
+            -f event_type='doc-sync-request' \
+            -f "client_payload[module_name]=${{ env.MODULE_NAME }}" \
+            -f "client_payload[source_repo]=${{ github.repository }}" \
+            -f "client_payload[source_run_id]=${{ github.run_id }}" \
+            -f "client_payload[pr_number]=${{ github.event.pull_request.number }}" \
+            -f "client_payload[pr_title]=${{ github.event.pull_request.title }}" \
+            -f "client_payload[pr_url]=${{ github.event.pull_request.html_url }}" \
+            -f "client_payload[merge_commit_sha]=${{ github.event.pull_request.merge_commit_sha }}" \
+            -f "client_payload[actor]=${{ github.actor }}"
