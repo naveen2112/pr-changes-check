@@ -1,2 +1,2 @@
-application backround colour will be skybluee so that application will be neat
+application backround colour will be black so that application will be neat
 
