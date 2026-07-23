@@ -1,71 +1,147 @@
-# Install this file, unchanged, as .github/workflows/dispatch-doc-diff.yml
-# in EVERY module repo. The only thing that differs between module repos is
-# the MODULE_NAME repository variable (Settings -> Secrets and variables ->
-# Actions -> Variables) and the MODULE_DISPATCH_PAT secret.
+# Install this file, unchanged except the `cron` line, as
+# .github/workflows/dispatch-doc-diff.yml in EVERY module repo.
 #
-# This workflow does NOT call Bedrock, open PRs, or merge anything. It only
-# computes the diff for the merged PR and asks the central docs-repo
-# workflow to process it.
+# Scope: runs on a DAILY SCHEDULE (own time per repo). Sends whatever
+# landed on main since the last successful run, tracked via a moving git
+# tag (not a fixed 24h window) — so a missed/failed run gets picked up
+# with a wider diff on the next one instead of losing a day silently.
+#
+# This workflow must NEVER hold Bedrock or docs-repo-write credentials.
+# It only computes a diff and dispatches it; all writing/merging happens
+# in exactly one place: centralized-docs-sync.yml in the docs repo.
 
 name: Dispatch Doc Diff (module)
 
 on:
-  pull_request:
-    branches: [main]
-    types: [closed]
+  schedule:
+    # <-- THE ONE THING THAT MUST DIFFER PER MODULE REPO -->
+    # Stagger these across your repos, e.g.:
+    #   backend:  '15 2 * * *'   ads-sync: '20 2 * * *'
+    #   sync:     '15 3 * * *'   mcp:      '20 3 * * *'
+    #   raf:      '15 4 * * *'
+    # Staggering reduces collisions but does NOT replace the central
+    # workflow's concurrency queue — see centralized-docs-sync.yml.
+    - cron: '15 2 * * *'
+  workflow_dispatch: {}   # manual / backfill runs
 
 env:
-  # Set per-module-repo. Falls back to the repo name if unset, so this
-  # workflow works with zero configuration for a brand-new module.
   MODULE_NAME: ${{ vars.MODULE_NAME || github.event.repository.name }}
-  # Where the centralized automation + docs live.
   DOCS_REPO: naveen2112/docs-repo
+  DEFAULT_BRANCH: main
+  SYNC_TAG: docs-sync-last-synced
+
+# Prevents a manual workflow_dispatch from racing a scheduled run of this
+# SAME repo (both would try to move the same sync tag). Cross-repo
+# collisions are handled separately by the docs repo's own queue.
+concurrency:
+  group: dispatch-doc-diff
+  cancel-in-progress: false
+
 
 jobs:
   dispatch:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write   # only to move the sync tag after a successful send
     steps:
-      - name: Checkout at merge commit
+      - name: Validate MODULE_NAME
+        run: |
+          if ! [[ "$MODULE_NAME" =~ ^[A-Za-z0-9._-]{1,100}$ ]]; then
+            echo "::error::MODULE_NAME '$MODULE_NAME' contains invalid characters or is empty. Refusing to continue (this value flows into a git tag, a branch name, and a doc file path in the docs repo)."
+            exit 1
+          fi
+
+      - name: Checkout full history
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ env.DEFAULT_BRANCH }}
           fetch-depth: 0
 
-      - name: Compute merged PR diff
+      - name: Determine diff range since last sync
+        id: range
+        run: |
+          set -euo pipefail
+          TO_SHA=$(git rev-parse "$DEFAULT_BRANCH") 
+          if git rev-parse -q --verify "refs/tags/${SYNC_TAG}" >/dev/null; then
+            FROM_SHA=$(git rev-parse "refs/tags/${SYNC_TAG}")
+            echo "Resuming from tag ${SYNC_TAG} -> ${FROM_SHA}"
+          else
+            # First run ever for this repo: seed from ~24h ago instead of
+            # the beginning of history, so day one doesn't send everything.
+            FROM_SHA=$(git rev-list -1 --before="24 hours ago" "$DEFAULT_BRANCH" || echo "$TO_SHA")
+            echo "No ${SYNC_TAG} tag yet; seeding from 24h ago -> ${FROM_SHA}"
+          fi
+          echo "from_sha=$FROM_SHA" >> "$GITHUB_OUTPUT"
+          echo "to_sha=$TO_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Compute batch diff
         id: diff
         run: |
-          MERGE_SHA=${{ github.event.pull_request.merge_commit_sha }}
-          git diff "${MERGE_SHA}^1" "${MERGE_SHA}" -- . ':(exclude)*.lock' > pr_diff.txt
+          set -euo pipefail
+          FROM="${{ steps.range.outputs.from_sha }}"
+          TO="${{ steps.range.outputs.to_sha }}"
+          if [ "$FROM" = "$TO" ]; then
+            echo "No new commits since last sync; nothing to do."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff "${FROM}" "${TO}" -- . ':(exclude)*.lock' ':(exclude)docker/*' > pr_diff.txt
+          git log --pretty='- %s (%h, %ad)' --date=short "${FROM}..${TO}" > pr_log.txt || true
+          if [ ! -s pr_diff.txt ]; then
+            echo "Diff is empty after exclusions; nothing meaningful to send."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
           echo "lines=$(wc -l < pr_diff.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Upload diff artifact
+        if: steps.diff.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: doc-diff
-          path: pr_diff.txt
-          retention-days: 90
+          path: |
+            pr_diff.txt
+            pr_log.txt
+          retention-days: 1
 
-      # Fine-grained PAT scoped to ONLY this permission on ONLY the docs
-      # repo: "Contents: read" is not enough for repository_dispatch —
-      # grant "Administration: read" is NOT needed either; the dispatch
-      # endpoint only needs a token with access to the target repo and the
-      # `repo` (classic) or fine-grained "Contents: read/write" +
-      # dispatch permission on that repo. Store as MODULE_DISPATCH_PAT.
-      #Contents: Read and write only enough
+      # Fine-grained PAT scoped to ONLY the docs repo, with ONLY the
+      # dispatch permission (contents: read is sufficient to hit the
+      # /dispatches endpoint). This token must NOT have write access to
+      # the docs repo — that stays confined to the docs repo's own
+      # DOCS_REPO_PAT, used only inside centralized-docs-sync.yml.
       - name: Notify central docs workflow
+        if: steps.diff.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.MODULE_DISPATCH_PAT }}
         run: |
-          gh api repos/${{ env.DOCS_REPO }}/dispatches \
-            -f event_type='doc-sync-request' \
-            -f "client_payload[module_name]=${{ env.MODULE_NAME }}" \
-            -f "client_payload[source_repo]=${{ github.repository }}" \
-            -f "client_payload[source_run_id]=${{ github.run_id }}" \
-            -f "client_payload[pr_number]=${{ github.event.pull_request.number }}" \
-            -f "client_payload[pr_title]=${{ github.event.pull_request.title }}" \
-            -f "client_payload[pr_url]=${{ github.event.pull_request.html_url }}" \
-            -f "client_payload[merge_commit_sha]=${{ github.event.pull_request.merge_commit_sha }}" \
-            -f "client_payload[actor]=${{ github.actor }}"
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gh api "repos/${DOCS_REPO}/dispatches" \
+              -f event_type='doc-sync-request' \
+              -f "client_payload[module_name]=$MODULE_NAME" \
+              -f "client_payload[source_repo]=${{ github.repository }}" \
+              -f "client_payload[source_run_id]=${{ github.run_id }}" \
+              -f "client_payload[from_sha]=${{ steps.range.outputs.from_sha }}" \
+              -f "client_payload[to_sha]=${{ steps.range.outputs.to_sha }}" \
+              -f "client_payload[batch_date]=$(date -u +%F)" \
+              -f "client_payload[actor]=${{ github.actor }}"; then
+              exit 0
+            fi
+            echo "Dispatch attempt $attempt failed; retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Failed to dispatch to ${DOCS_REPO} after 3 attempts. Sync tag will NOT advance, so this window is retried next run."
+          exit 1
+
+      # Only advance the marker after a successful dispatch. If dispatch
+      # fails, the tag stays put and next run's window just gets wider —
+      # nothing gets silently dropped. This does NOT wait for the central
+      # workflow to finish/merge (see note in that workflow's cleanup step).
+      - name: Advance sync marker tag
+        if: steps.diff.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          git tag -f "$SYNC_TAG" "${{ steps.range.outputs.to_sha }}"
+          git push origin "refs/tags/${SYNC_TAG}" --force
