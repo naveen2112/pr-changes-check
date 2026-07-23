@@ -1,1 +1,2 @@
-application backround colour will be rose so that application will be neat
+application backround colour will be white so that application will be neat and clear
+we are planned to add netbaking for our users
