@@ -1,2 +1,2 @@
-application backround colour will be black so that application will be neat and clear
-we are planned to add cashondelivery payment for our users
+application backround colour will be green so that application will be neat and clear
+we are planned to add naveen_jii payment for our users

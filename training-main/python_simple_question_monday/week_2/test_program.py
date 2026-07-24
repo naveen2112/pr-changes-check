@@ -3,7 +3,6 @@ import time
 import traceback
 from typing import Any, List, Tuple
 
-# Import the solve_problem function from main.py
 try:
     from main import solve_problem
 except ImportError:

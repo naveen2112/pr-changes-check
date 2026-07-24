@@ -1,7 +1,7 @@
 """Leet Code Problem: Two Sum"""
 
 class Solution:
-    def twoSum(self, nums, target):
+    def TwoSum(self, nums, target):
         nums_hash = {}
         for i in range(len(nums)):
             if target - nums[i] in nums_hash: 
