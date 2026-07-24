@@ -1,3 +1,5 @@
+"""Leet Code Problem: Longest Beautiful Substring"""
+
 from itertools import groupby
 
 total_length_constrain, total_num_of_input = map(int, input("Enter the input: ").strip().split())
@@ -37,3 +39,5 @@ def handle_sub_string(total_length_constrain: int, total_num_of_input: int, init
 final_data = handle_sub_string(total_length_constrain, total_num_of_input, initial_string)
 
 print(final_data)
+
+"""TODO: Add the test cases for the above code"""
