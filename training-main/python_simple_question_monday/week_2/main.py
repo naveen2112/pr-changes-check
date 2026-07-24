@@ -5,46 +5,46 @@ def main():
     print("Hello from problem_array_2!")
 
 
-def solve_problem(tasks):
+def solve_problem(srinis):
     """Parallel Processing Problem.
 
-    Given N tasks with execution times, split them into a prefix for processor 1
-    and remaining tasks for processor 2. Both processors work in parallel.
+    Given N srinis with execution times, split them into a prefix for processor 1
+    and remaining srinis for processor 2. Both processors work in parallel.
     Find the minimum possible maximum execution time.
 
     Args:
-        tasks: List[int] - Execution times of tasks
+        srinis: List[int] - Execution times of srinis
 
     Returns:
         int - Minimum possible total execution time
 
     Examples:
-        tasks = [4, 2, 3] -> 5
-        tasks = [1, 1, 1, 1, 1, 1] -> 3
+        srinis = [4, 2, 3] -> 5
+        srinis = [1, 1, 1, 1, 1, 1] -> 3
     """
 
-    q_1, q_2 = [], []
+    naveen_1, naveen_2 = [], []
 
-    if len(tasks) == 1:
-        return sum(tasks)
+    if len(srinis) == 1:
+        return sum(srinis)
 
-    for task in tasks:
-        if not q_1 or not q_2:
-            if not q_1:
-                q_1.append(task)
+    for srini in srinis:
+        if not naveen_1 or not naveen_2:
+            if not naveen_1:
+                naveen_1.append(srini)
             else:
-                if not q_2:
-                    q_2.append(task)
+                if not naveen_2:
+                    naveen_2.append(srini)
         else:
-            if q_1 and q_2:
-                if sum(q_1) >= sum(q_2):
-                    q_2.append(task)
-                elif sum(q_2) <= sum(q_1):
-                    q_1.append(task)
+            if naveen_1 and naveen_2:
+                if sum(naveen_1) >= sum(naveen_2):
+                    naveen_2.append(srini)
+                elif sum(naveen_2) <= sum(naveen_1):
+                    naveen_1.append(srini)
                 else:
-                    q_1.append(task)
+                    naveen_1.append(srini)
 
-    return max(sum(q_1), sum(q_2))
+    return max(sum(naveen_1), sum(naveen_2))
 
 
 def run_sample_tests():
