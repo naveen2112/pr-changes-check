@@ -3,7 +3,7 @@
 from itertools import groupby
 
 total_length_constrain, total_num_of_input = map(int, input("Enter the input: ").strip().split())
-initial_string = input("Enter inital string: ")
+_initial_string = input("Enter inital string: ")
 
 def itentify_the_sub_string(string_data: str):
     """group by sub string"""
@@ -18,25 +18,25 @@ def itentify_the_sub_string(string_data: str):
 
 
 
-def handle_sub_string(total_length_constrain: int, total_num_of_input: int, initial_string: str):
+def handle_sub_string(total_length_constrain: int, total_num_of_input: int, _initial_string: str):
     "handle consective substring"
 
     total_consective_substring = []
 
-    if total_length_constrain < len(initial_string):
+    if total_length_constrain < len(_initial_string):
         raise ValueError("Exceeding the expected string length")
 
-    total_consective_substring.append(itentify_the_sub_string(initial_string))
+    total_consective_substring.append(itentify_the_sub_string(_initial_string))
 
     for _ in range(total_num_of_input):
         recurring_string = input("Enter the string: ")
-        initial_string = initial_string+recurring_string
+        _initial_string = _initial_string+recurring_string
 
-        total_consective_substring.append(itentify_the_sub_string(initial_string))
+        total_consective_substring.append(itentify_the_sub_string(_initial_string))
 
     return ' '.join(total_consective_substring)
 
-final_data = handle_sub_string(total_length_constrain, total_num_of_input, initial_string)
+final_data = handle_sub_string(total_length_constrain, total_num_of_input, _initial_string)
 
 print(final_data)
 
