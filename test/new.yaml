@@ -81,7 +81,7 @@ jobs:
           # Centralized here so it's easy to see/adjust all excluded
           # paths in one place, instead of scattered inline in the git
           # diff pathspec below. Space-separated list of git pathspec
-          # patterns passed to `:(exclude)`.
+          # patterns passed to `:(exclude)`.fghjk
           EXCLUDED_PATTERNS: "test/ .github/ infra/ secrets .env migrations/ *.lock docker/*"
         run: |
           set -euo pipefail
