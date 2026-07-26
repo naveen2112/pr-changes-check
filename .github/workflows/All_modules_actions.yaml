@@ -52,6 +52,11 @@ jobs:
             exit 1
           fi
 
+      - name: Show trigger time
+        run: |   
+           date -u   
+           echo "Triggered at UTC above"
+
       - name: Checkout full history
         uses: actions/checkout@v4
         with:
