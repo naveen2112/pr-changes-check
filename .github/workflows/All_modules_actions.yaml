@@ -117,6 +117,16 @@ jobs:
           echo "has_changes=true" >> "$GITHUB_OUTPUT"
           echo "lines=$(wc -l < pr_diff.txt)" >> "$GITHUB_OUTPUT"
 
+      - name: Upload diff artifact
+        if: steps.diff.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: doc-diff
+          path: |
+            pr_diff.txt
+            pr_log.txt
+          retention-days: 1
+
       # Fine-grained PAT scoped to ONLY the docs repo, with ONLY the
       # dispatch permission (contents: read is sufficient to hit the
       # /dispatches endpoint). This token must NOT have write access to
