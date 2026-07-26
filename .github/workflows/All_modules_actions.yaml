@@ -21,7 +21,7 @@ on:
     #   raf:      '15 4 * * *'
     # Staggering reduces collisions but does NOT replace the central
     # workflow's concurrency queue — see centralized-docs-sync.yml.
-    - cron: '30 14 * * *'
+    - cron: '38 8 * * *'
   workflow_dispatch: {}   # manual / backfill runs
 
 env:
