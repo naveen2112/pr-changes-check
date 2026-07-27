@@ -13,15 +13,6 @@
 name: Dispatch Doc Diff (module)
 
 on:
-  schedule:
-    # <-- THE ONE THING THAT MUST DIFFER PER MODULE REPO -->
-    # Stagger these across your repos, e.g.:
-    #   backend:  '15 2 * * *'   ads-sync: '20 2 * * *'
-    #   sync:     '15 3 * * *'   mcp:      '20 3 * * *'
-    #   raf:      '15 4 * * *'
-    # Staggering reduces collisions but does NOT replace the central
-    # workflow's concurrency queue — see centralized-docs-sync.yml.
-    - cron: '38 8 * * *'
   workflow_dispatch: {}   # manual / backfill runs
 
 env:
