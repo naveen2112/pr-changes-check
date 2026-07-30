@@ -77,8 +77,16 @@ jobs:
           # Centralized here so it's easy to see/adjust all excluded
           # paths in one place, instead of scattered inline in the git
           # diff pathspec below. Space-separated list of git pathspec
-          # patterns passed to `:(exclude)`.
-          EXCLUDED_PATTERNS: "test/ .github/ infra/ secrets .env migrations/ *.lock docker/*"
+          # patterns passed to `:(glob,exclude)`.
+          #
+          # `**/.*` and `**/.*/**` together are what actually implement
+          # "anything starting with a dot, at any depth": the first
+          # matches a dotfile/dot-folder AS a path's last segment (e.g.
+          # `.env`, or the `.cache` folder itself); the second matches
+          # anything INSIDE a dot-folder at any depth (e.g.
+          # `src/.cache/tempfile`). Neither alone is sufficient -- tested
+          # both ways against a real repo before landing on this pair.
+          EXCLUDED_PATTERNS: "test/ .github/ infra/ secrets .env migrations/ *.lock docker/* config/ storage/ mcp/ Newrelic/ **/.* **/.*/**"
         run: |
           set -euo pipefail
           FROM="${{ steps.range.outputs.from_sha }}"
@@ -90,11 +98,30 @@ jobs:
           fi
 
           # Build the pathspec exclusion args dynamically from
-          # EXCLUDED_PATTERNS so it's a single source of truth.
+          # EXCLUDED_PATTERNS so it's a single source of truth. Every
+          # pattern uses :(glob,exclude) -- not plain :(exclude) -- since
+          # the dot-path patterns above require ** glob-magic to match at
+          # any depth; the simpler directory patterns (config/, mcp/,
+          # etc.) work identically either way, so making all of them
+          # glob-magic keeps this one consistent rule instead of two.
+          #
+          # `set -f` (noglob) around the loop is NOT optional: the
+          # unquoted `for pattern in $EXCLUDED_PATTERNS` below both word-
+          # splits AND filename-expands each entry, since it's bash. With
+          # real files in the checkout, "**/.*" would get silently
+          # rewritten into whatever hidden files/dirs actually exist at
+          # runtime (verified this by hand -- it turned "**/.*" into
+          # literal paths like ".env" and "src/.cache/tempfile" and, worse,
+          # missed sibling dot-directories the glob didn't happen to
+          # match), instead of staying the literal git pathspec it's
+          # meant to be. `set -f` disables that expansion for this loop
+          # only; word-splitting on whitespace still happens as intended.
           PATHSPEC_ARGS=()
+          set -f
           for pattern in $EXCLUDED_PATTERNS; do
-            PATHSPEC_ARGS+=(":(exclude)${pattern}")
+            PATHSPEC_ARGS+=(":(glob,exclude)${pattern}")
           done
+          set +f
 
           git diff "${FROM}" "${TO}" -- . "${PATHSPEC_ARGS[@]}" > pr_diff.txt
           git log --pretty=format:'commit %h (%ad)%nAuthor: %an%n%n%B%n%x2d%x2d%x2d%x2d%x2d%x2d%x2d%x2d%x2d%x2d' \
