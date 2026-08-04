@@ -22,4 +22,4 @@ worked for online payment method and cod
 now changing the application colour to black this need to be update in dcos
 
 
-removed the paytm method for paymenet
+removed the paytm method for paymenet and also for old users
