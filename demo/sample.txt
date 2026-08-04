@@ -17,3 +17,6 @@ fvgbnm,
 now ccd also available for payment and cash on delivery
 
 worked for online payment method and cod
+
+
+now changing the application colour to black this need to be update in dcos
