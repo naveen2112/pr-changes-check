@@ -1,4 +1,4 @@
-application backround colour will be green so that application will be neat and clear
+application backround colour will be blue so that application will be neat and clear
 we are planned to add naveen_loves_srini_jii payment for our users
 
 
