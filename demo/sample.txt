@@ -15,3 +15,5 @@ now chaning the payment methods to online
 fvgbnm, 
 
 now ccd also available for payment and cash on delivery
+
+worked for online payment method and cod
