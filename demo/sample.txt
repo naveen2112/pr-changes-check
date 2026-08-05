@@ -24,4 +24,4 @@ now changing the application colour to black this need to be update in dcos
 
 removed the paytm method for paymenet and also for old users
 
-now plainng to use the paythm method for sometime due to customer request and the estimate end date will be in 2 months
+now plainng to use the paythm method for sometime due to customer request and the estimate end date will be in 3 months
