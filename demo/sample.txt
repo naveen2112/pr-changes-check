@@ -29,3 +29,4 @@ now plainng to use the paythm method for sometime due to customer request and th
 changing the payment method to online gpay method as an new feature
 
 online payment git issue now fixxed with cod for some days
+Users can now pay using Google Pay.
