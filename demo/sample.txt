@@ -32,3 +32,4 @@ online payment git issue now fixxed with cod for some days
 Users can now pay using Google Pay.
 
 Resolved a problem that prevented users from downloading invoices.
+Excel export support added for reports
