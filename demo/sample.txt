@@ -26,4 +26,4 @@ removed the paytm method for paymenet and also for old users
 
 now plainng to use the paythm method for sometime due to customer request and the estimate end date will be in 5 months
 
-changing the payment method to online as an new feature
+changing the payment method to online paytm method as an new feature
